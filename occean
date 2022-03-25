@@ -1,0 +1,405 @@
+#include <bits/stdc++.h>
+#define ll long long
+#define S second
+#define F first
+using namespace std;
+const int N = 15;
+
+char lastMove;
+int dx[4] = {0,0,1,-1};
+int dy[4] = {1,-1,0,0};
+int memo[N][N];
+bool vis[N][N];
+bool visBuild[N][N];
+int bestGrid[N][N];
+char grid[N][N];
+queue<pair<int , int>> ans;
+set<pair<ll , ll>> validCord;
+
+bool valid(int i , int j) {
+    return i >= 0 and j >= 0 and i < 15 and j < 15 and grid[i][j] == '.' and !vis[i][j];
+}
+
+int longestPath(int row , int col) {
+    if(!valid(row , col))return 0;
+    int &ret = memo[row][col];
+    if(~ret)return ret;
+    ret = 1;
+    int mx = -(1e5);
+    vis[row][col] = true;
+    for(int x = 0; x<4; x++) {
+        mx = max(mx, longestPath(row + dx[x], col + dy[x]));
+    }
+    vis[row][col] = false;
+    return ret += mx;
+}
+
+void buildPathVersionTwo(int row, int col) {
+    if(!valid(row , col))return;
+    if(visBuild[row][col])return ;
+    visBuild[row][col] = true;
+    ans.push({row, col});
+    int mx = 0;
+    for(int x = 0; x<4; x++){
+        if(valid(row+dx[x] , col+dy[x]) and !visBuild[row+dx[x]][col+dy[x]]){
+            mx = max(mx, bestGrid[row+dx[x]][col+dy[x]]);
+        }
+    }
+
+    for(int x = 0; x<4; x++){
+        if(mx == bestGrid[row+dx[x]][col+dy[x]]){
+            buildPathVersionTwo(row+dx[x] , col+dy[x]);
+            break;
+        }
+    }
+}
+
+queue<pair<int , int>> surface(int row , int col){
+    memset(memo, -1, sizeof memo);
+    memset(visBuild, false, sizeof visBuild);
+    memset(vis, false, sizeof vis);
+    int best = longestPath(row , col);
+    for(int i = 0; i<15; i++){
+        for(int j = 0; j<15; j++){
+            bestGrid[i][j] = memo[i][j];
+        }
+    }
+    while (!ans.empty()) ans.pop();
+    buildPathVersionTwo(row, col);
+    return ans;
+}
+
+void TargetLocation(char Direction){
+    stack<pair<ll, ll>>  V;
+    lastMove = Direction;
+    //V store valid coordinates.
+    for (auto &it : validCord){
+        ll NewX, NewY;
+        if (Direction == 'N') {
+            NewX = it.first-1, NewY = it.second;
+            if (NewX < 0 || NewY < 0 || NewX >= 15 || NewY >= 15 || grid[NewX][NewY] =='x'){
+                continue;
+            }else{
+                V.push({NewX,NewY});
+            }
+        }
+        if (Direction == 'S')
+        {
+            NewX = it.first+1, NewY = it.second;
+            if (NewX < 0 || NewY < 0 || NewX >= 15 || NewY >= 15 || grid[NewX][NewY] =='x'){
+                continue;
+            }else{
+                V.push({NewX,NewY});
+            }
+        }
+        if (Direction == 'E')
+        {
+            NewX = it.first, NewY = it.second+1;
+            if (NewX < 0 || NewY < 0 || NewX >= 15 || NewY >= 15 || grid[NewX][NewY] =='x')
+            {
+                continue;
+            }else{
+                V.push({NewX,NewY});
+            }
+        }
+        if (Direction == 'W')
+        {
+            NewX = it.first, NewY = it.second-1;
+            if (NewX < 0 || NewY < 0 || NewX >= 15 || NewY >= 15 || grid[NewX][NewY] =='x')
+            {
+                continue;
+            }else{
+                V.push({NewX,NewY});
+            }
+        }
+    }
+    validCord.clear();
+    while (!V.empty()){
+        validCord.insert(V.top());
+        V.pop();
+    }
+    clog << "new set\n";
+    for (auto &it : validCord) clog << it.S << " " << it.F << "\n";
+}
+
+bool chaeckhit(int r, int c, int tr, int tc) {
+    int disr = abs(r - tr);
+    int disc = abs(c - tc);
+    if((disc >= 1 && disc < 5) || (disr >= 1 && disr < 5)) return true;
+    else return false;
+}
+void EachSector(ll MinX,ll MaxX, ll MinY,ll MaxY)
+{
+    set<pair<ll, ll>> Temp;
+    for (auto &it : validCord){
+        ll curX = it.first, curY = it.second;//11
+        if(curX < MinX || curX > MaxX || curY < MinY || curY > MaxY) continue;
+        else Temp.insert({curX, curY});
+    }
+    validCord = Temp;
+    clog<<"New\n";
+    for (auto &it : validCord){
+        clog<<it.S<<" "<<it.F<<"\n";
+    }
+}
+
+void TargetSector(char Sector){
+    if(Sector == '1') EachSector(0,4,0,4);// 0 4 0 4
+    if(Sector == '2') EachSector(0,4,5,9); // 5 9 0 4
+    if(Sector == '3') EachSector(0,4,10,14); // 10 14 0 4
+    if(Sector == '4') EachSector(5,9,0,4); // 0 4 5 9
+    if(Sector == '5') EachSector(5,9,5,9); // 5 9 5 9
+    if(Sector == '6') EachSector(5,9,10,14);// 10 14 5 9
+    if(Sector == '7') EachSector(10,14,0,4);// 0 4 10 14
+    if(Sector == '8') EachSector(10,14,5,9);//5 9 10 14
+    if(Sector == '9') EachSector(10,14,10,14);// 10 14 10 14
+
+}
+
+void  TaragetTORPEDO(ll Tx,ll Ty){
+    set<pair<ll, ll>> Temp;
+    for (auto &it : validCord){
+        ll curX = it.first, curY = it.second;
+        ll Diff = abs(curY - Tx) + abs(curX - Ty);
+        if(Diff <= 4) Temp.insert({curX, curY});
+    }
+    validCord.clear();
+    validCord = Temp;
+    clog<<"New\n";
+    for (auto &it : validCord){
+        clog<<it.S<<" "<<it.F<<"\n";
+    }
+}
+
+void TargetSilence(){
+    stack<pair<ll,ll>>Temp;
+    for (auto &it : validCord){
+        ll curX = it.first, curY = it.second;
+        //temper
+        int x=4;
+        if(lastMove == 'N'){
+            // To E
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY + i;
+                if(tempY >= 15) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To W
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY - i;
+                if(tempY <0) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To N
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX - i;
+                if(tempX < 0) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+        }else if(lastMove=='S'){
+            // To E
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY + i;
+                if(tempY >= 15) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To W
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY - i;
+                if(tempY <0) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To S
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX + i;
+                if(tempX >= 15) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+        }else if(lastMove=='W')
+        {
+            // To W
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY - i;
+                if(tempY <0) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To N
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX - i;
+                if(tempX < 0) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+            // To S
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX + i;
+                if(tempX >= 15) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+        }else if(lastMove=='E')
+        {
+            // To E
+            for( ll i = 1; i<=x; i++){
+                ll tempY = curY + i;
+                if(tempY >= 15) break;
+                else if(grid[curX][tempY] == 'x') break;
+                Temp.push({curX,tempY});
+            }
+            // To N
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX - i;
+                if(tempX < 0) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+            // To S
+            for( ll i = 1; i<=x; i++){
+                ll tempX = curX + i;
+                if(tempX >= 15) break;
+                if(grid[tempX][curY] == 'x') break;
+                Temp.push({tempX,curY});
+            }
+        }
+    }
+    while(!Temp.empty())
+    {
+        validCord.insert(Temp.top());
+        Temp.pop();
+    }
+    for (auto &it : validCord){
+        clog<<it.S<<" "<<it.F<<"\n";
+    }
+
+}
+
+void ParseAction(string Action){
+    if (Action[0]=='M') TargetLocation(Action[Action.size()-1]);
+    else if (Action.find("SURFACE") != -1) TargetSector(Action[Action.size()-1]);
+    else if (Action[0]=='T'){
+        string tor=Action.substr(0,Action.find('|'));
+        string mov=Action.substr(Action.find('|')+1,6);
+        string X, Y;
+        ll cur1 = -1;
+        for(ll i = 8; i<tor.size(); i++){
+            if(cur1 == -1 && tor[i] == ' ')cur1 = 0;
+            else if(cur1 == -1)X += tor[i];
+            else Y += tor[i];
+        }
+        ll Tx = stoi(X), Ty = stoi(Y);
+        TaragetTORPEDO(Tx,Ty);
+        TargetLocation(mov[5]);
+    }
+    else if (Action.find("SILENCE")!= -1) TargetSilence();
+}
+
+int main(){
+    int width;
+    int height;
+    int my_id;
+    cin >> width >> height >> my_id; cin.ignore();
+    for (int i = 0; i < height; i++) {
+        string line;
+        getline(cin, line);
+        for(int j = 0;j < height;j++) {
+            grid[i][j] = line[j];
+            if(grid[i][j] == '.') validCord.insert({i, j});
+        }
+    }
+    int longest = 0;
+    int startRow{0}, startCol (0);
+    for(int x = 0; x<15; x++){
+        for(int y=0; y<15; y++){
+            if(grid[x][y] == 'x')continue;
+            memset(memo , -1 , sizeof  memo);
+            memset(vis, false, sizeof vis);
+            int ret = longestPath(x , y);
+            if(ret > longest) {
+                for(int i = 0; i<15; i++){
+                    for(int j = 0; j<15; j++){
+                        bestGrid[i][j] = memo[i][j];
+                    }
+                }
+                longest = ret;
+                startCol = y;
+                startRow = x;
+            }
+        }
+    }
+
+    buildPathVersionTwo(startRow , startCol);
+    cout << startCol << ' ' <<  startRow << endl;
+    cerr<< ans.size()<<"size";
+    ans.pop();
+    int counterSilence = 0 , torpedo = 0;
+    while (1) {
+        int x;
+        int y;
+        int my_life;
+        int opp_life;
+        int torpedo_cooldown;
+        int sonar_cooldown;
+        int silence_cooldown;
+        int mine_cooldown;
+        cin >> x >> y >> my_life >> opp_life >> torpedo_cooldown >> sonar_cooldown >> silence_cooldown >> mine_cooldown; cin.ignore();
+        string sonar_result;
+        cin >> sonar_result; cin.ignore();
+        string opponent_orders;
+        getline(cin, opponent_orders);
+        ParseAction(opponent_orders);
+
+        swap(x, y);
+        if(ans.empty()) {
+            cout << "SURFACE\n";
+            ans = surface(x , y);
+            ans.pop();
+            continue;
+        }
+        else{
+            int row = ans.front().first;
+            int col = ans.front().second;
+            ans.pop();
+            int targetx = (*validCord.begin()).first, targety = (*validCord.begin()).second;
+            if(validCord.size() == 1 &&chaeckhit(row, col, targetx, targety) && torpedo >= 3){
+                    torpedo = 0;
+                    cerr<<"YES"<<endl;
+                    cout << "TORPEDO " << targety << " " << targetx <<" |" ;
+                    if (row == x and col == y + 1)cout << "MOVE E"<<endl;
+                    else if (row == x and col == y - 1)cout << "MOVE W"<<endl;
+                    else if (row == x - 1 and col == y)cout << "MOVE N"<<endl;
+                    else cout << "MOVE S"<<endl;
+                continue;
+            }
+            if(torpedo < 3){
+                torpedo++;
+                if (row == x and col == y + 1)cout << "MOVE E ";
+                else if (row == x and col == y - 1)cout << "MOVE W ";
+                else if (row == x - 1 and col == y)cout << "MOVE N ";
+                else cout << "MOVE S ";
+                cout <<"TORPEDO"<<endl;
+                continue;
+            }
+            if(counterSilence == 6){
+                counterSilence = 0;
+                if (row == x and col == y + 1)cout << "SILENCE E 1";
+                else if (row == x and col == y - 1)cout << "SILENCE W 1";
+                else if (row == x - 1 and col == y)cout << "SILENCE N 1";
+                else cout << "SILENCE S 1";
+            }else{
+                counterSilence++;
+                if (row == x and col == y + 1)cout << "MOVE E SILENCE";
+                else if (row == x and col == y - 1)cout << "MOVE W SILENCE";
+                else if (row == x - 1 and col == y)cout << "MOVE N SILENCE";
+                else cout << "MOVE S SILENCE";
+            }
+            cout << "\n";
+        }
+    }
+}
